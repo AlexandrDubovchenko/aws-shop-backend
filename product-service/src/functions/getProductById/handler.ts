@@ -11,8 +11,8 @@ const getProductById = async (event) => {
     })
   } catch (error) {
     return formatJSONResponse({
-      error: error.message
-    })
+      message: error.message
+    }, 404)
   }
 };
 
