@@ -1,10 +1,14 @@
+import * as dotenv from "dotenv";
 import type { AWS } from '@serverless/typescript';
 
-import { getProductsList, getProductById, swagger } from '@functions/index';
+import { getProductsList, getProductById, swagger, createProduct } from '@functions/index';
+
+dotenv.config({path: __dirname + '/.env'});
 
 const serverlessConfiguration: AWS = {
   service: 'product-service',
   frameworkVersion: '3',
+  useDotenv : true,
   plugins: ['serverless-esbuild'],
   provider: {
     name: 'aws',
@@ -18,9 +22,19 @@ const serverlessConfiguration: AWS = {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',
     },
+    iamRoleStatements: [
+      {
+        Effect: 'Allow',
+        Action: ["dynamodb:*"],
+        Resource: [
+          "arn:aws:dynamodb:${self:provider.region}:*:table/${env:PRODUCTS_TABLE_NAME}",
+          "arn:aws:dynamodb:${self:provider.region}:*:table/${env:STOCKS_TABLE_NAME}"
+        ]
+      }
+    ]
   },
   // import the function via paths
-  functions: { getProductsList, getProductById, swagger },
+  functions: { getProductsList, getProductById, createProduct, swagger },
   package: { individually: true },
   custom: {
     esbuild: {

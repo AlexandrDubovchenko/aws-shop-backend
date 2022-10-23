@@ -1,7 +1,9 @@
 export type Product = {
-  id: number,
+  id: string,
   name: string,
   price: number
   currency: string,
   image: string
 }
+
+export type createProductData = Omit<Product, 'id'>
