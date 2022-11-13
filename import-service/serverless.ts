@@ -5,6 +5,7 @@ import { importProductsFile, importFileParser } from '@functions/index';
 const serverlessConfiguration: AWS = {
   service: 'import-service',
   frameworkVersion: '3',
+  useDotenv: true,
   plugins: ['serverless-esbuild'],
   provider: {
     name: 'aws',
@@ -28,6 +29,11 @@ const serverlessConfiguration: AWS = {
         Effect: 'Allow',
         Action: ['s3:*'],
         Resource: ['arn:aws:s3:::aws-study-files/*']
+      },
+      {
+        Effect: 'Allow',
+        Action: 'sqs:*',
+        Resource: ['arn:aws:sqs:eu-west-1:473321033343:catalogItemsQueue']
       }
     ]
   },

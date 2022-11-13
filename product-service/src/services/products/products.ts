@@ -63,7 +63,7 @@ export const createProduct = async (data: createProductData) => {
               Item: {
                 id,
                 name,
-                price,
+                price: +price,
                 currency,
                 image
               }

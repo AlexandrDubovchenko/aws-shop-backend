@@ -1,16 +1,23 @@
-import { S3 } from 'aws-sdk';
+import { S3, SQS } from 'aws-sdk';
 import csv from 'csv-parser';
+
 import { formatJSONResponse } from '@libs/api-gateway';
 import { s3, UPLOAD_BUCKET } from '@libs/s3';
 
 const readFile = (params: S3.GetObjectRequest) => {
   return new Promise((res, rej) => {
     const stream = s3.getObject(params).createReadStream();
+    const sqs = new SQS();
 
     stream
       .pipe(csv())
       .on('data', async (data) => {
-        console.log(JSON.stringify(data));
+        sqs.sendMessage({
+          MessageBody: JSON.stringify(data),
+          QueueUrl: process.env.SQS_URL
+        }, (error) => {
+          console.log(error)
+        })
       })
       .on('error', (error) => {
         rej('PARSE ERROR ' + error.message);
@@ -28,9 +35,6 @@ const importFileParser = async (event) => {
       Key: record.s3.object.key
     }
 
-    console.log(JSON.stringify(params));
-    
-
     try {
       await readFile(params);
       await s3.copyObject({
@@ -40,8 +44,6 @@ const importFileParser = async (event) => {
       }).promise();
 
       await s3.deleteObject(params).promise();
-
-      console.log(record.s3.object.key + ' succesfully parsed');
 
       return formatJSONResponse({
         data: `Parsed ${record.s3.object.key}`

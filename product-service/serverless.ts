@@ -1,14 +1,14 @@
 import * as dotenv from "dotenv";
 import type { AWS } from '@serverless/typescript';
 
-import { getProductsList, getProductById, swagger, createProduct } from '@functions/index';
+import { getProductsList, getProductById, swagger, createProduct, catalogBatchProcess } from '@functions/index';
 
-dotenv.config({path: __dirname + '/.env'});
+dotenv.config({ path: __dirname + '/.env' });
 
 const serverlessConfiguration: AWS = {
   service: 'product-service',
   frameworkVersion: '3',
-  useDotenv : true,
+  useDotenv: true,
   plugins: ['serverless-esbuild'],
   provider: {
     name: 'aws',
@@ -30,11 +30,49 @@ const serverlessConfiguration: AWS = {
           "arn:aws:dynamodb:${self:provider.region}:*:table/${env:PRODUCTS_TABLE_NAME}",
           "arn:aws:dynamodb:${self:provider.region}:*:table/${env:STOCKS_TABLE_NAME}"
         ]
+      },
+      {
+        Effect: 'Allow',
+        Action: 'sqs:*',
+        Resource: [{ 'Fn::GetAtt': ['SQSQueue', 'Arn'] }]
+      },
+      {
+        Effect: 'Allow',
+        Action: 'sns:*',
+        Resource: {
+          Ref: 'SNSTopic'
+        }
       }
     ]
   },
   // import the function via paths
-  functions: { getProductsList, getProductById, createProduct, swagger },
+  functions: { getProductsList, getProductById, createProduct, swagger, catalogBatchProcess },
+  resources: {
+    Resources: {
+      SQSQueue: {
+        Type: 'AWS::SQS::Queue',
+        Properties: {
+          QueueName: 'catalogItemsQueue'
+        }
+      },
+      SNSTopic: {
+        Type: 'AWS::SNS::Topic',
+        Properties: {
+          TopicName: 'createProductTopic'
+        }
+      },
+      SNSSubscription: {
+        Type: 'AWS::SNS::Subscription',
+        Properties: {
+          Endpoint: process.env.EMAIL,
+          Protocol: 'email',
+          TopicArn: {
+            Ref: 'SNSTopic'
+          }
+        }
+      }
+    }
+  },
   package: { individually: true },
   custom: {
     esbuild: {
